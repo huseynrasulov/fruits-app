@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <title>Vue.js App</title>        
+        <link href="https://getbootstrap.com/docs/5.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+        
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+        <script src="https://getbootstrap.com/docs/5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <div id="app">
+            <fruits-list></fruits-list>
+        </div>
+
+        <script type="text/x-template" id="fruits-list-template">
+            <div>
+                <div class="container">
+                <h1>Fruits</h1>
+                <form>
+                    <div class="card">
+                        <div class="card-header">Filter</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" v-model="searchName" class="form-control" name="name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="family" class="form-label">Family</label>
+                                <input type="text" v-model="searchFamily" class="form-control" name="family">
+                            </div>
+                            
+                            <div class="col-auto">
+                                <button  type="button" @click="search" class="btn btn-primary mb-3">Search</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="card mt-3">
+                    <div class="card-header">Results</div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Family</th>
+                                    <th>Nutrition Facts</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="fruit in fruits">
+                                    <td>${ fruit.name }</td>
+                                    <td>${ fruit.family }</td>
+                                    <td>
+                                        <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#exampleModal" type="button" @click="showFacts(fruit)">Show Facts</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-success" type="button" @click="addToFavorites(fruit)"  v-if="!fruit.favorite">Add to Favorites</button>
+                                        <button class="btn btn-danger" type="button" @click="removeFromFavorites(fruit)" v-if="fruit.favorite">Remove from Favorites</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer">
+                        <div>
+                            <button class="btn btn-dark" type="button" @click="previousPage" v-bind:disabled="!hasPreviousPage">Previous Page</button>
+                            <button class="btn btn-dark" type="button" @click="nextPage" v-bind:disabled="!hasNextPage">Next Page</button>
+                            <span style="float: right;">Page ${ currentPage } of ${ totalPages }</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-header">Favorites</div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item" v-for="favorite in favorites" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="showFacts(favorite)" style="cursor: pointer;">${ favorite.name }</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="exampleModalLabel">Information</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                        <table class="table table-striped">
+                            <tr>
+                                <th>Name</th>
+                                <td>${ facts.name }</td>
+                            </tr>
+                            <tr>
+                                <th>Family</th>
+                                <td>${ facts.family }</td>
+                            </tr>
+                            <tr>
+                                <th>Order</th>
+                                <td>${ facts.orders }</td>
+                            </tr>
+                            <tr>
+                                <th>Carbohydrates</th>
+                                <td>${ facts.carbohydrates }</td>
+                            </tr>
+                            <tr>
+                                <th>Protein</th>
+                                <td>${ facts.protein }</td>
+                            </tr>
+                            <tr>
+                                <th>Fat</th>
+                                <td>${ facts.fat }</td>
+                            </tr>
+                            <tr>
+                                <th>Sugar</th>
+                                <td>${ facts.sugar }</td>
+                            </tr>
+                            <tr>
+                                <th>Calories</th>
+                                <td>${ facts.calories }</td>
+                            </tr>
+                        </table>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </script>
+
+        <script>
+            Vue.component('fruits-list', {
+                delimiters: ['${', '}'],
+                template: '#fruits-list-template',
+                data: function() {
+                    return {
+                        fruits: [],
+                        currentPage: 1,
+                        totalPages: 1,
+                        searchName: '',
+                        searchFamily: '',
+                        favorites: [],
+                        facts: {}
+                    };
+                },
+                computed: {
+                    hasPreviousPage: function() {
+                        return this.currentPage > 1;
+                    },
+                    hasNextPage: function() {
+                        return this.currentPage < this.totalPages;
+                    }
+                },
+                methods: {
+                    search: function() {
+                        axios.get('/fruits', {
+                            params: {
+                                page: this.currentPage,
+                                name: this.searchName,
+                                family: this.searchFamily
+                            }
+                        }).then(response => {
+                            this.fruits = response.data.items;
+                            this.currentPage = response.data.current_page;
+                            this.totalPages = response.data.total_pages;
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    },
+                    
+                    getFavorites: function() {
+                        axios.get('/fruits/favorites', {}).then(response => {
+                            this.favorites = response.data.items;
+                            console.log(response.data.items);
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    },
+                    showFacts: function(fruit) {
+                        axios.get('/fruits/' + fruit.id + '/facts').then(response => {
+                            this.facts = response.data;
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    },
+                    addToFavorites: function(fruit) {
+                        axios.post('/fruits/' + fruit.id + '/favorite').then(response => {
+                            fruit.favorite = true;
+                            this.favorites.push(fruit);
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    },
+                    removeFromFavorites: function(fruit) {
+                        axios.post('/fruits/' + fruit.id + '/unfavorite').then(response => {
+                            fruit.favorite = false; 
+                            const index = this.favorites.findIndex(f => f.id === fruit.id);
+                            if (index !== -1) {
+                                this.favorites.splice(index, 1);
+                            }
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                    },
+                    isFavorite: function(fruit) {
+                        return fruit.favorite;
+                    },
+                    previousPage: function() {
+                        this.currentPage--;
+                        this.search();
+                    },
+                    nextPage: function() {
+                        this.currentPage++;
+                        this.search();
+                    }
+                    },
+                    created: function() {
+                        this.search();
+                        this.getFavorites();
+                    }
+                    });
+                    new Vue({
+                            delimiters: ['${', '}'],
+                            el: '#app'
+                        });
+                    </script>
+                </body>
+                </html>
+
